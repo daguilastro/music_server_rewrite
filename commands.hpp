@@ -14,7 +14,7 @@ constexpr std::string_view songs_dir = "/home/sisos/Code/Server/songs/";
 enum class CommandCode : uint8_t {
     AddSong = 1,
     Ping = 2,
-    DownloadSong = 3,
+    // 3 reservado (compatibilidad hacia atrás)
     Search = 4,
 };
 
@@ -159,6 +159,13 @@ inline void register_all_commands(CommandDispatcher& dispatcher) {
 
         const std::string url = arg_to_string(args[0]);
 
+        // Rechazar URLs de playlist
+        if (url.find("/playlist?") != std::string::npos ||
+            (url.find("&list=") != std::string::npos && url.find("/watch?") == std::string::npos)) {
+            std::print("URL rechazada: {}\n", url);
+            return;
+        }
+
         enqueue_download_and_register(url);
         std::print("OK: ADDSONG en progreso para {}\n", url);
     });
@@ -168,27 +175,7 @@ inline void register_all_commands(CommandDispatcher& dispatcher) {
         std::print("PONG\n");
     });
 
-    // DOWNLOADSONG: tipo 3
-    dispatcher.register_command(static_cast<uint8_t>(CommandCode::DownloadSong), [](void* ctx, std::vector<Argument> args) {
-        if (args.size() != 1) {
-            std::print("Error: DOWNLOADSONG requiere 1 argumento: <url>\n");
-            return;
-        }
-
-        const std::string url = arg_to_string(args[0]);
-        
-        // Rechazar URLs de playlist
-        if (url.find("/playlist?") != std::string::npos || 
-            url.find("&list=") != std::string::npos && url.find("/watch?") == std::string::npos) {
-            std::print("  URL rechazada: {}\n", url);
-            return;
-        }
-
-        enqueue_download_and_register(url);
-        std::print("OK: Descarga en progreso - {}\n", url);
-    });
-    
-    // SEARCH: tipo 5 - Búsqueda de canciones
+    // SEARCH: tipo 3 - Búsqueda de canciones
     dispatcher.register_command(static_cast<uint8_t>(CommandCode::Search), [](void* ctx, std::vector<Argument> args) {
         if (args.size() != 1) {
             std::print("Error: SEARCH requiere 1 argumento: <query>\n");

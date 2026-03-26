@@ -26,14 +26,14 @@ private:
   std::vector<uint8_t> payload_;
   uint32_t expected_payload_size_ = 0;
 
-  static uint32_t read_u32_be(const char *data) {
+  static uint32_t read_u32_be(const char *data) { // leer unsigned int 
     return (static_cast<uint32_t>(static_cast<uint8_t>(data[0])) << 24) |
            (static_cast<uint32_t>(static_cast<uint8_t>(data[1])) << 16) |
            (static_cast<uint32_t>(static_cast<uint8_t>(data[2])) << 8) |
            static_cast<uint32_t>(static_cast<uint8_t>(data[3]));
   }
 
-  static uint16_t read_u16_be(const uint8_t *data) {
+  static uint16_t read_u16_be(const uint8_t *data) {  // leer unsigned short
     return (static_cast<uint16_t>(data[0]) << 8) |
            static_cast<uint16_t>(data[1]);
   }

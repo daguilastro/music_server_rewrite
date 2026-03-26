@@ -4,8 +4,6 @@
 #include <thread>
 #include <vector>
 
-// wtffff
-
 class Server {
   tcp::acceptor acceptor_;
   CommandDispatcher &dispatcher_;
