@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-constexpr std::string_view db_path = "/mnt/juegos/DBs/music_server.db";
+constexpr std::string_view db_path = "music_server.db";
 
 // Estructura para resultados de búsqueda
 struct Song {
@@ -111,27 +111,37 @@ public:
             std::print("Error abriendo DB: {}\n", sqlite3_errmsg(db));
             return false;
         }
+
+        // Operación atómica: si falla insertar canción, se revierte song count del artista.
+        rc = sqlite3_exec(db, "BEGIN IMMEDIATE TRANSACTION;", nullptr, nullptr, nullptr);
+        if (rc != SQLITE_OK) {
+            std::print("Error iniciando transacción: {}\n", sqlite3_errmsg(db));
+            sqlite3_close(db);
+            return false;
+        }
         
         // Primero: crear o actualizar artista
         if (!upsertArtist(db, artist_id, artist_name)) {
+            sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
             sqlite3_close(db);
             return false;
         }
 
-        // Segundo: insertar canción con FK a artist
-        const char* sql = "INSERT INTO song (id, title, channel, duration_seconds, file_path) VALUES (?, ?, ?, ?, ?);";
+        // Segundo: insertar canción con FK por artist_id
+        const char* sql = "INSERT INTO song (id, title, artist_id, duration_seconds, file_path) VALUES (?, ?, ?, ?, ?);";
         sqlite3_stmt* stmt;
         
         rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
         if (rc != SQLITE_OK) {
             std::print("Error preparando statement: {}\n", sqlite3_errmsg(db));
+            sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
             sqlite3_close(db);
             return false;
         }
 
         sqlite3_bind_text(stmt, 1, song_id.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, title.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 3, artist_name.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, artist_id.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(stmt, 4, duration_seconds);
         sqlite3_bind_text(stmt, 5, file_path.c_str(), -1, SQLITE_TRANSIENT);
 
@@ -139,6 +149,7 @@ public:
         if (rc != SQLITE_DONE) {
             std::print("Error insertando: {}\n", sqlite3_errmsg(db));
             sqlite3_finalize(stmt);
+            sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
             sqlite3_close(db);
             return false;
         }
@@ -146,6 +157,15 @@ public:
         std::print("Canción agregada: {} ({})\n", title, song_id);
         
         sqlite3_finalize(stmt);
+
+        rc = sqlite3_exec(db, "COMMIT;", nullptr, nullptr, nullptr);
+        if (rc != SQLITE_OK) {
+            std::print("Error haciendo COMMIT: {}\n", sqlite3_errmsg(db));
+            sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
+            sqlite3_close(db);
+            return false;
+        }
+
         sqlite3_close(db);
         return true;
     }
@@ -218,7 +238,7 @@ public:
         // Ordenar por score descendente, luego por título
         const char* sql = R"(
             SELECT 
-                id, title, channel, duration_seconds, file_path,
+                id, title, artist_id, duration_seconds, file_path,
                 CASE 
                     WHEN LOWER(title) = LOWER(?) THEN 100
                     WHEN LOWER(title) LIKE LOWER(?) THEN 90

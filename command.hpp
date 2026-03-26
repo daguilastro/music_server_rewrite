@@ -13,7 +13,7 @@ struct Argument{
 // Estructura del comando con header binario
 struct Command {
     uint8_t type;           // Tipo de comando (1 byte)
-    uint32_t total_length;  // Longitud total incluyendo header (4 bytes)
+    uint32_t payload_length;  // Longitud del payload (4 bytes, no incluye header)
     std::vector<Argument> args;  // Argumentos del comando 
 }; 
 

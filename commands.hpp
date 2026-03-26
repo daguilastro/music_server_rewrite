@@ -14,8 +14,7 @@ constexpr std::string_view songs_dir = "/home/sisos/Code/Server/songs/";
 enum class CommandCode : uint8_t {
     AddSong = 1,
     Ping = 2,
-    // 3 reservado (compatibilidad hacia atrás)
-    Search = 4,
+    Search = 3,
 };
 
 inline std::string arg_to_string(const Argument& arg) {
@@ -159,13 +158,6 @@ inline void register_all_commands(CommandDispatcher& dispatcher) {
 
         const std::string url = arg_to_string(args[0]);
 
-        // Rechazar URLs de playlist
-        if (url.find("/playlist?") != std::string::npos ||
-            (url.find("&list=") != std::string::npos && url.find("/watch?") == std::string::npos)) {
-            std::print("URL rechazada: {}\n", url);
-            return;
-        }
-
         enqueue_download_and_register(url);
         std::print("OK: ADDSONG en progreso para {}\n", url);
     });
@@ -204,7 +196,7 @@ inline void register_all_commands(CommandDispatcher& dispatcher) {
             // Title: [4 bytes length][data]
             append_string(response, song.title);
 
-            // Channel name: [4 bytes length][data]
+            // Channel/artist ID: [4 bytes length][data]
             append_string(response, song.channel);
 
             // Duration: 4 bytes big-endian

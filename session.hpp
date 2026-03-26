@@ -22,7 +22,7 @@ private:
   CommandDispatcher &dispatcher_;
 
   // Estado de lectura
-  std::array<char, 5> header_; // 1 byte tipo + 4 bytes longitud
+  std::array<char, 5> header_; // 1 byte tipo + 4 bytes longitud de payload (BE)
   std::vector<uint8_t> payload_;
   uint32_t expected_payload_size_ = 0;
 
@@ -78,7 +78,7 @@ private:
           expected_payload_size_ = read_u32_be(header_.data() + 1);
 
           if (expected_payload_size_ == 0) {
-            Command cmd{.type = type, .total_length = 0, .args = {}};
+            Command cmd{.type = type, .payload_length = 0, .args = {}};
             dispatcher_.execute(cmd, this);
             read_header();
             return;
@@ -99,7 +99,7 @@ private:
           }
 
           Command cmd{
-              .type = type, .total_length = expected_payload_size_, .args = {}};
+              .type = type, .payload_length = expected_payload_size_, .args = {}};
 
           if (!parse_payload_into_args(cmd)) {
             std::print("Error: payload mal formado para comando tipo {}\n",

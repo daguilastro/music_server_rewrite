@@ -6,12 +6,12 @@ CREATE TABLE IF NOT EXISTS "artist" (
 	PRIMARY KEY("id")
 );
 CREATE TABLE IF NOT EXISTS "song" (
-	"id"	INTEGER,
+	"id"	TEXT,
 	"title"	TEXT,
-	"channel"	TEXT,
+	"artist_id"	TEXT NOT NULL,
 	"duration_seconds"	INTEGER NOT NULL,
 	"file_path"	TEXT NOT NULL,
 	PRIMARY KEY("id"),
-	FOREIGN KEY("channel") REFERENCES "artist"("name")
+	FOREIGN KEY("artist_id") REFERENCES "artist"("id")
 );
 COMMIT;
