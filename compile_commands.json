@@ -1,0 +1,7 @@
+[
+    {
+        "directory": "/home/sisos/Code/Server",
+        "command": "/usr/bin/g++ -std=c++23 -c main.cpp -o main.o",
+        "file": "main.cpp"
+    }
+]
